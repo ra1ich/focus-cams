@@ -4,7 +4,7 @@ A free browser extension that helps you stay focused. While focus mode is on, di
 (Instagram, TikTok, X, Reddit…) open a random **live webcam of the sea, mountains or wild nature** instead —
 and only from places where it's **daylight right now**.
 
-**Website:** https://YOUR-LOGIN.github.io/focus-cams/
+**Website:** https://ra1ich.github.io/focus-cams/
 
 ## Features
 
