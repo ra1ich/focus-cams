@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Focus: Nature Cams — browser extension</title>
+<meta name="description" content="A free browser extension: while you focus, distracting sites open live webcams of the sea, mountains and nature — only where it is daylight right now.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* Settings (store links, tip links) live in the <script> at the bottom. */
+  :root {
+    --ink: #17262c;
+    --ink-soft: #4b5e66;
+    --paper: #f6f3ec;
+    --card: #fffdf8;
+    --line: #e2ddd1;
+    --pine: #2a6b55;
+    --pine-dark: #1f5141;
+    --sun: #f0b44c;
+    --sea: #2f6f8f;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font: 17px/1.6 "Manrope", system-ui, sans-serif; color: var(--ink); background: var(--paper); }
+  h1, h2, h3 { font-family: "Literata", Georgia, serif; line-height: 1.15; margin: 0; }
+  a { color: var(--sea); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Шапка с пейзажем, небо зависит от времени суток у посетителя ---------- */
+  .hero { position: relative; overflow: hidden; color: #fff; min-height: 680px; display: flex; flex-direction: column; }
+  .hero svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,30,40,.45) 0%, rgba(10,30,40,.18) 45%, rgba(10,30,40,0) 70%); pointer-events: none; }
+  .hero > .wrap, .hero .timeline { z-index: 1; }
+  .hero nav { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .01em; color: #fff; text-decoration: none; }
+  .brand span.dot { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,.18); display: grid; place-items: center; font-size: 16px; }
+  .hero nav a.small { color: #fff; opacity: .9; text-decoration: none; font-size: 15px; margin-left: 20px; }
+  .hero-text { position: relative; padding: 70px 0 200px; max-width: 640px; }
+  .hero h1 { font-size: clamp(38px, 6vw, 64px); font-weight: 700; text-shadow: 0 2px 24px rgba(0,0,0,.18); }
+  .hero p.lead { font-size: 20px; margin: 20px 0 32px; opacity: .95; max-width: 540px; text-shadow: 0 1px 12px rgba(0,0,0,.2); }
+  .btns { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 999px; font-weight: 700;
+         text-decoration: none; font-size: 16px; border: 0; cursor: pointer; transition: transform .15s, background .15s; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.primary { background: #fff; color: var(--pine-dark); }
+  .btn.ghost { background: rgba(255,255,255,.16); color: #fff; backdrop-filter: blur(4px); }
+  .btn.tip { background: var(--sun); color: #3a2a06; }
+  .btn.tip.alt { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); }
+  .btn[aria-disabled="true"] { opacity: .55; pointer-events: none; }
+  .timeline { position: absolute; right: 24px; bottom: 22px; font-size: 13px; opacity: .85; }
+
+  /* ---------- Секции ---------- */
+  section { padding: 88px 0; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 700; color: var(--pine); margin-bottom: 12px; }
+  h2 { font-size: clamp(30px, 4vw, 42px); margin-bottom: 18px; }
+  .intro { font-size: 19px; color: var(--ink-soft); max-width: 680px; margin: 0 0 44px; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; counter-reset: s; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; position: relative; }
+  .step::before { counter-increment: s; content: counter(s); font-family: "Literata", serif; font-size: 44px; color: var(--sun); line-height: 1; display: block; margin-bottom: 14px; }
+  .step h3 { font-size: 21px; margin-bottom: 8px; }
+  .step p { margin: 0; color: var(--ink-soft); }
+
+  .features { background: #eae6db; }
+  .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 44px; }
+  .feat { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 18px 0; border-top: 1px solid #d8d2c3; }
+  .feat .ico { width: 44px; height: 44px; border-radius: 12px; background: var(--card); display: grid; place-items: center; font-size: 20px; }
+  .feat h3 { font-size: 19px; margin-bottom: 4px; font-family: "Manrope", sans-serif; font-weight: 700; }
+  .feat p { margin: 0; color: var(--ink-soft); font-size: 16px; }
+
+  .install ol { padding-left: 22px; max-width: 720px; }
+  .install li { margin: 10px 0; }
+  code { background: #ebe6da; padding: 2px 7px; border-radius: 6px; font-size: .92em; }
+  .note { font-size: 15px; color: var(--ink-soft); }
+
+  /* ---------- Чаевые ---------- */
+  .tips-box { background: var(--card); border: 1px solid var(--line); border-radius: 28px; padding: 48px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; }
+  .tips-box p { color: var(--ink-soft); margin: 0 0 24px; }
+  .cup { font-size: 92px; text-align: center; line-height: 1; }
+  .amounts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+  .amounts span { font-size: 14px; padding: 6px 12px; border-radius: 999px; background: #f3eee2; color: var(--ink-soft); }
+  .tip-hint { font-size: 13px; color: var(--ink-soft); margin-top: 14px; }
+
+  details { border-top: 1px solid var(--line); padding: 16px 0; max-width: 760px; }
+  details summary { cursor: pointer; font-weight: 700; }
+  details p { color: var(--ink-soft); margin: 10px 0 0; }
+
+  .lang { background: rgba(255,255,255,.18); color:#fff; border:0; border-radius:999px; padding:6px 12px; font:inherit; font-size:14px; font-weight:700; cursor:pointer; margin-left:20px; }
+  .tip-note { font-size: 13px; color: var(--ink-soft); margin: 10px 0 0; }
+  footer { padding: 40px 0 60px; font-size: 14px; color: var(--ink-soft); border-top: 1px solid var(--line); }
+
+  @media (max-width: 820px) {
+    .steps, .feat-grid, .tips-box { grid-template-columns: 1fr; }
+    .tips-box { padding: 32px 24px; }
+    .cup { display: none; }
+    .hero nav a.small { display: none; }
+    .hero-text { padding: 40px 0 180px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero" id="top">
+  <svg class="scene" viewBox="0 0 1440 640" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop id="sky1" offset="0" stop-color="#5aa6c9"/>
+        <stop id="sky2" offset="1" stop-color="#bfe0e8"/>
+      </linearGradient>
+      <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2f6f8f"/>
+        <stop offset="1" stop-color="#1c4a63"/>
+      </linearGradient>
+    </defs>
+    <rect width="1440" height="640" fill="url(#sky)"/>
+    <circle id="sun" cx="1120" cy="150" r="46" fill="#f6d27a"/>
+    <g id="stars" opacity="0" fill="#fff">
+      <circle cx="120" cy="80" r="1.6"/><circle cx="300" cy="140" r="1.2"/><circle cx="520" cy="60" r="1.5"/>
+      <circle cx="760" cy="110" r="1.1"/><circle cx="940" cy="50" r="1.7"/><circle cx="1280" cy="90" r="1.3"/>
+      <circle cx="1380" cy="190" r="1.1"/><circle cx="660" cy="190" r="1.2"/><circle cx="220" cy="230" r="1"/>
+    </g>
+    <path d="M0 430 L160 330 L270 380 L420 250 L560 360 L700 290 L820 370 L980 240 L1120 350 L1260 300 L1440 380 L1440 640 L0 640Z" fill="#6f9aa6" opacity=".75"/>
+    <path d="M0 470 L120 420 L260 460 L380 380 L520 470 L640 430 L760 480 L900 400 L1040 470 L1200 420 L1320 460 L1440 430 L1440 640 L0 640Z" fill="#2a6b55"/>
+    <path d="M420 250 L392 285 L420 276 L448 290Z M980 240 L950 278 L980 268 L1010 282Z" fill="#fff" opacity=".9"/>
+    <rect y="520" width="1440" height="120" fill="url(#seaG)"/>
+    <path d="M60 560 q40 -12 80 0 M300 590 q40 -12 80 0 M620 565 q40 -12 80 0 M900 600 q40 -12 80 0 M1180 570 q40 -12 80 0" stroke="#fff" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>
+
+  <div class="wrap" style="position:relative; flex:1">
+    <nav>
+      <a class="brand" href="#top"><span class="dot">🏔️</span> <span data-k="brand">Focus: Nature Cams</span></a>
+      <div>
+        <a class="small" href="#how" data-k="navHow">How it works</a>
+        <a class="small" href="#install" data-k="navInstall">Install</a>
+        <a class="small" href="#tips" data-k="navTips">Support</a>
+        <button class="lang" id="langBtn">RU</button>
+      </div>
+    </nav>
+    <div class="hero-text">
+      <h1 data-k="h1">Swap the feed for the sea and mountains</h1>
+      <p class="lead" data-k="lead">A free browser extension that, while you focus, replaces distracting sites with live nature webcams. Opened Reddit out of habit? Here are waves in the Maldives instead.</p>
+      <div class="btns">
+        <a class="btn primary" id="getBtn" href="focus-cams.zip" download data-k="getFree">⬇ Get it free</a>
+        <a class="btn ghost" href="#tips" data-k="leaveTip">☕ Leave a tip</a>
+      </div>
+    </div>
+  </div>
+  <div class="timeline" id="skyNote"></div>
+</header>
+
+<main>
+  <section id="how">
+    <div class="wrap">
+      <div class="eyebrow" data-k="howEyebrow">How it works</div>
+      <h2 data-k="howH">Three steps to calm, focused work</h2>
+      <p class="intro" data-k="howIntro">No red “BLOCKED” screens, no guilt. Instead of another feed you watch real surf for a moment — and get back to work.</p>
+      <div class="steps">
+        <div class="step"><h3 data-k="s1h">Turn focus on</h3><p data-k="s1p">One click on the icon: 25 minutes, 50 minutes, 1.5 hours or no timer.</p></div>
+        <div class="step"><h3 data-k="s2h">Got distracted? See nature</h3><p data-k="s2p">A site from your list never even starts loading — a random live webcam opens instead.</p></div>
+        <div class="step"><h3 data-k="s3h">Timer ends — back to normal</h3><p data-k="s3p">Focus mode switches off by itself and all sites work again.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="wrap">
+      <div class="eyebrow" data-k="featEyebrow">What's inside</div>
+      <h2 data-k="featH">Small, but thoughtful</h2>
+      <div class="feat-grid">
+        <div class="feat"><div class="ico">☀️</div><div><h3 data-k="f1h">Only where it's daylight</h3><p data-k="f1p">The extension calculates the sun's position for every cam, so you never get a pitch-black beach at night.</p></div></div>
+        <div class="feat"><div class="ico">🎲</div><div><h3 data-k="f2h">A new cam every time</h3><p data-k="f2p">40+ cams: Maldives, Bali, the Dolomites, Iceland, Tenerife, California, Kenya's savanna.</p></div></div>
+        <div class="feat"><div class="ico">⚡</div><div><h3 data-k="f3h">Instant interception</h3><p data-k="f3p">The request to a distracting site never leaves your browser — the page doesn't even flash.</p></div></div>
+        <div class="feat"><div class="ico">✏️</div><div><h3 data-k="f4h">Your sites, your cams</h3><p data-k="f4p">Fully editable lists. Add your favourite YouTube live streams.</p></div></div>
+        <div class="feat"><div class="ico">🌌</div><div><h3 data-k="f5h">Night cams</h3><p data-k="f5p">Northern lights in Alaska and a Hawaiian volcano appear only when it's dark there.</p></div></div>
+        <div class="feat"><div class="ico">🔒</div><div><h3 data-k="f6h">Collects nothing</h3><p data-k="f6p">No accounts, analytics or servers. Settings stay in your browser.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="install" class="install">
+    <div class="wrap">
+      <div class="eyebrow" data-k="instEyebrow">Install</div>
+      <h2 data-k="instH">Two minutes and you're done</h2>
+      <p class="intro" data-k="instIntro">Works in Chrome, Edge, Brave, Opera, Yandex Browser and other Chromium-based browsers. After installing, a welcome page shows you where to click.</p>
+      <div id="storeBox" hidden>
+        <div class="btns" id="storeBtns"></div>
+        <p class="note" data-k="manualNote" style="margin-top:18px">Prefer to install manually? Follow the steps below.</p>
+      </div>
+      <ol>
+        <li data-k="i1"><a href="focus-cams.zip" download>Download the archive</a> and unzip it to any folder.</li>
+        <li data-k="i2">Open the extensions page: <code>chrome://extensions</code> (Edge: <code>edge://extensions</code>).</li>
+        <li data-k="i3">Turn on <b>Developer mode</b> in the top-right corner.</li>
+        <li data-k="i4">Click <b>Load unpacked</b> and choose the <code>focus-cams</code> folder.</li>
+        <li data-k="i5">A welcome page opens — it walks you through pinning the icon and a 1-minute demo.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="tips">
+    <div class="wrap">
+      <div class="tips-box">
+        <div>
+          <div class="eyebrow" data-k="tipEyebrow">Support the author</div>
+          <h2 data-k="tipH">Helped you focus?</h2>
+          <p data-k="tipP">The extension is free and will stay free. If it saved you a couple of hours, you can leave a tip — it keeps new cams and features coming.</p>
+          <div class="btns" id="tipButtons"></div>
+          <p class="tip-note" data-k="tipNote">Any amount you like. Pay with any bank card — no account needed.</p>
+        </div>
+        <div class="cup" aria-hidden="true">☕</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" style="padding-top:0">
+    <div class="wrap">
+      <div class="eyebrow" data-k="faqEyebrow">FAQ</div>
+      <h2 data-k="faqH">Questions</h2>
+      <details><summary data-k="q1">Does it block every site?</summary><p data-k="a1">No, only the ones on your list. By default that's social and entertainment sites (Instagram, TikTok, X, Reddit, Facebook, Twitch, Pinterest), and you can change the list completely.</p></details>
+      <details><summary data-k="q2">Why does the browser ask for access to all sites?</summary><p data-k="a2">Otherwise the extension couldn't notice that you're opening a distracting site. It doesn't read page content and sends nothing anywhere.</p></details>
+      <details><summary data-k="q3">Can I stop focus early?</summary><p data-k="a3">Yes — click the mountain icon and press “Stop focus”.</p></details>
+      <details><summary data-k="q4">A cam didn't load — what now?</summary><p data-k="a4">Open the distracting site again: a new cam is picked each time. You can remove a broken cam in the settings.</p></details>
+      <details id="privacy"><summary data-k="q5">Privacy policy</summary><p data-k="a5">Focus: Nature Cams does not collect, store or transmit any personal data. Your site list, cam list and timer state are kept only in your browser's extension storage (chrome.storage) and sync only through your own browser account if sync is enabled. The extension uses no analytics, ads or external servers. Webcams open on their owners' websites (SkylineWebcams, HDOnTap and others), which have their own policies.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap" data-k="footer">Focus: Nature Cams · free browser extension · streams belong to their owners</div>
+</footer>
+
+<script>
+  /* ======================= SETTINGS =======================
+     Paste your links here. Leave "" for anything you don't use yet. */
+  const CONFIG = {
+    githubRepo:  "",   // "login/focus-cams" — leave "" to detect automatically on GitHub Pages
+    chromeStore: "",   // Chrome Web Store page, e.g. https://chromewebstore.google.com/detail/...
+    edgeStore:   "",   // Edge Add-ons page,     e.g. https://microsoftedge.microsoft.com/addons/detail/...
+    tipIntl:     "https://tips.tips/000493387",   // tips for international cards (tips.tips or similar)
+    tipRu:       ""    // tips for Russian cards (CloudTips), e.g. https://pay.cloudtips.ru/p/xxxxxxxx
+  };
+  /* ======================================================== */
+
+  const RU = {
+    brand: "Фокус: камеры природы", navHow: "Как работает", navInstall: "Установка", navTips: "Поддержать",
+    h1: "Вместо ленты — море и горы",
+    lead: "Бесплатное расширение для браузера: на время работы подменяет отвлекающие сайты живыми веб-камерами природы. Открыли ВК по привычке — а там волны на Мальдивах.",
+    getFree: "⬇ Скачать бесплатно", leaveTip: "☕ Оставить чаевые",
+    howEyebrow: "Как это работает", howH: "Три шага до спокойной работы",
+    howIntro: "Никаких красных экранов «ЗАБЛОКИРОВАНО» и чувства вины. Вместо очередной ленты вы на минуту смотрите на настоящий прибой — и возвращаетесь к делу.",
+    s1h: "Включите фокус", s1p: "Один клик по иконке: 25 минут, 50 минут, полтора часа или без таймера.",
+    s2h: "Отвлеклись — увидели природу", s2p: "Сайт из вашего списка даже не начинает грузиться: сразу открывается случайная живая камера.",
+    s3h: "Таймер вышел — всё как было", s3p: "Режим выключается сам, и сайты снова доступны.",
+    featEyebrow: "Что внутри", featH: "Маленькое, но продуманное",
+    f1h: "Только там, где светло", f1p: "Расширение считает положение солнца для каждой камеры и не покажет тёмный пляж ночью.",
+    f2h: "Каждый раз новая камера", f2p: "Больше 40 камер: Мальдивы, Бали, Доломиты, Исландия, Тенерифе, Калифорния, саванна Кении.",
+    f3h: "Мгновенный перехват", f3p: "Запрос к отвлекающему сайту не уходит в сеть — страница даже не мелькает.",
+    f4h: "Ваши сайты и камеры", f4p: "Списки полностью настраиваются. Можно добавить свои трансляции с YouTube.",
+    f5h: "Ночные камеры", f5p: "Северное сияние на Аляске и вулкан на Гавайях появляются, только когда там темно.",
+    f6h: "Ничего не собирает", f6p: "Нет аккаунтов, аналитики и серверов. Настройки хранятся только в браузере.",
+    instEyebrow: "Установка", instH: "Две минуты — и готово",
+    instIntro: "Работает в Chrome, Яндекс Браузере, Edge, Opera, Brave и других браузерах на Chromium. После установки откроется страница-подсказка, где показано, куда нажимать.",
+    manualNote: "Хотите установить вручную? Шаги ниже.",
+    i1: '<a href="focus-cams.zip" download>Скачайте архив</a> и распакуйте его в любую папку.',
+    i2: "Откройте страницу расширений: <code>chrome://extensions</code> (Яндекс Браузер — <code>browser://extensions</code>).",
+    i3: "Справа вверху включите <b>«Режим разработчика»</b>.",
+    i4: "Нажмите <b>«Загрузить распакованное расширение»</b> и выберите папку <code>focus-cams</code>.",
+    i5: "Откроется страница-подсказка: она покажет, как закрепить иконку, и предложит попробовать на 1 минуту.",
+    tipEyebrow: "Поддержать автора", tipH: "Помогло сосредоточиться?",
+    tipP: "Расширение бесплатное и останется бесплатным. Если оно сэкономило вам пару часов — можно оставить чаевые. Это мотивирует добавлять новые камеры и функции.",
+    tipNote: "Любая сумма. Оплата картой российского или иностранного банка, без регистрации.",
+    faqEyebrow: "Вопросы", faqH: "Частые вопросы",
+    q1: "Расширение блокирует все сайты?", a1: "Нет, только те, что в вашем списке. По умолчанию это соцсети и развлекательные сайты (ВК, Instagram, TikTok, X, Reddit, Пикабу, Дзен), но список можно полностью поменять.",
+    q2: "Почему браузер просит доступ ко всем сайтам?", a2: "Иначе расширение не сможет заметить, что вы открываете отвлекающий сайт. Оно не читает содержимое страниц и ничего никуда не отправляет.",
+    q3: "Можно выключить фокус раньше времени?", a3: "Да — нажмите на иконку с горами и «Выключить фокус».",
+    q4: "Камера не загрузилась — что делать?", a4: "Откройте отвлекающий сайт ещё раз: каждый раз выбирается новая камера. Нерабочую камеру можно удалить в настройках.",
+    q5: "Политика конфиденциальности", a5: "Расширение «Фокус: камеры природы» не собирает, не хранит и не передаёт персональные данные. Список сайтов, камер и состояние таймера хранятся только в хранилище расширения в вашем браузере (chrome.storage) и синхронизируются лишь через ваш аккаунт браузера, если синхронизация включена. Нет аналитики, рекламы и внешних серверов. Веб-камеры открываются на сайтах их владельцев (SkylineWebcams, HDOnTap и др.), у которых свои правила.",
+    footer: "Фокус: камеры природы · бесплатное расширение для браузера · трансляции принадлежат их владельцам"
+  };
+  const BTN = {
+    en: { chrome: "Add to Chrome", edge: "Get it for Edge", intl: "☕ Leave a tip", ru: "Tip with a Russian card", soon: "☕ Tips coming soon",
+          night: "It's night where you are — somewhere the sun is shining", morning: "Good morning", evening: "Evening here — sunrise in California" },
+    ru: { chrome: "Установить в Chrome", edge: "Установить в Edge", intl: "Картой иностранного банка", ru: "☕ Оставить чаевые", soon: "☕ Чаевые скоро появятся",
+          night: "У вас ночь — а где-то сейчас светит солнце", morning: "У вас утро", evening: "У вас вечер — в Калифорнии рассвет" }
+  };
+
+  // Remember the original English text so we can switch back.
+  const EN = {};
+  document.querySelectorAll("[data-k]").forEach(el => { EN[el.dataset.k] = el.innerHTML; });
+
+  function link(cls, text, url) {
+    const a = document.createElement("a");
+    a.className = "btn " + cls; a.innerHTML = text;
+    if (url) { a.href = url; a.target = "_blank"; a.rel = "noopener"; } else a.setAttribute("aria-disabled", "true");
+    return a;
+  }
+
+  function render(lang) {
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-k]").forEach(el => {
+      const k = el.dataset.k;
+      el.innerHTML = lang === "ru" && RU[k] ? RU[k] : EN[k];
+    });
+    document.getElementById("langBtn").textContent = lang === "ru" ? "EN" : "RU";
+    document.title = lang === "ru" ? "Фокус: камеры природы — расширение для браузера" : "Focus: Nature Cams — browser extension";
+    const b = BTN[lang];
+
+    // Store buttons (shown once you have store links).
+    const store = document.getElementById("storeBtns"); store.innerHTML = "";
+    if (CONFIG.chromeStore) store.appendChild(link("primary", b.chrome, CONFIG.chromeStore));
+    if (CONFIG.edgeStore) store.appendChild(link("tip alt", b.edge, CONFIG.edgeStore));
+    document.getElementById("storeBox").hidden = !store.children.length;
+    const get = document.getElementById("getBtn");
+    if (CONFIG.chromeStore) { get.href = "#install"; get.removeAttribute("download"); get.innerHTML = "⬇ " + b.chrome; }
+
+    // Tip buttons: Russian visitors see CloudTips first, everyone else sees the international option first.
+    const tips = document.getElementById("tipButtons"); tips.innerHTML = "";
+    const order = lang === "ru"
+      ? [[b.ru, CONFIG.tipRu], [b.intl, CONFIG.tipIntl]]
+      : [[b.intl, CONFIG.tipIntl], [b.ru, CONFIG.tipRu]];
+    let live = order.filter(([, u]) => u);
+    // Only one tip link so far — give it a plain "Leave a tip" label.
+    if (live.length === 1) live = [[lang === "ru" ? "☕ Оставить чаевые" : "☕ Leave a tip", live[0][1]]];
+    (live.length ? live : [[b.soon, ""]]).forEach(([text, url], i) => tips.appendChild(link("tip" + (i ? " alt" : ""), text, url)));
+
+    sky(b);
+    try { localStorage.setItem("lang", lang); } catch {}
+  }
+
+  // Sky in the header follows the visitor's time of day — just like the cams.
+  function sky(b) {
+    const h = new Date().getHours() + new Date().getMinutes() / 60;
+    const set = (a, c, sun, stars, y, note) => {
+      document.getElementById("sky1").setAttribute("stop-color", a);
+      document.getElementById("sky2").setAttribute("stop-color", c);
+      const s = document.getElementById("sun"); s.setAttribute("fill", sun); s.setAttribute("cy", y);
+      document.getElementById("stars").setAttribute("opacity", stars);
+      document.getElementById("skyNote").textContent = note;
+    };
+    if (h < 5 || h >= 21) set("#0f1d33", "#2b3d5c", "#e8eef5", 1, 120, b.night);
+    else if (h < 8)       set("#f2a07a", "#fbd9a8", "#ffd27a", .2, 330, b.morning);
+    else if (h < 17)      set("#5aa6c9", "#bfe0e8", "#f6d27a", 0, 150, "");
+    else                  set("#c9725d", "#f3c38e", "#ffcf6a", 0, 320, b.evening);
+  }
+
+  // Download links point to the latest GitHub release.
+  // On <login>.github.io/<repo>/ the repo is detected automatically; set CONFIG.githubRepo to override.
+  function downloadUrl() {
+    let repo = CONFIG.githubRepo;
+    if (!repo && location.hostname.endsWith(".github.io")) {
+      const login = location.hostname.split(".")[0];
+      const name = location.pathname.split("/").filter(Boolean)[0] || (login + ".github.io");
+      repo = login + "/" + name;
+    }
+    return repo ? `https://github.com/${repo}/releases/latest/download/focus-cams.zip` : "focus-cams.zip";
+  }
+  function fixDownloads() {
+    const url = downloadUrl();
+    document.querySelectorAll('a[href="focus-cams.zip"]').forEach(a => { a.href = url; });
+  }
+  const _render = render;
+  render = l => { _render(l); fixDownloads(); };
+
+  let lang = "en";
+  try { lang = localStorage.getItem("lang") || ""; } catch {}
+  if (!lang) lang = (navigator.language || "en").toLowerCase().startsWith("ru") ? "ru" : "en";
+  document.getElementById("langBtn").addEventListener("click", () => { lang = lang === "ru" ? "en" : "ru"; render(lang); });
+  render(lang);
+</script>
+</body>
+</html>
