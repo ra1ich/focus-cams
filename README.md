@@ -19,7 +19,7 @@ and only from places where it's **daylight right now**.
 
 ## Install
 
-1. Download [`focus-cams.zip`](focus-cams.zip) and unzip it.
+1. Download **`focus-cams.zip`** from the [latest release](../../releases/latest) and unzip it.
 2. Open `chrome://extensions` (Edge: `edge://extensions`).
 3. Turn on **Developer mode**.
 4. Click **Load unpacked** and select the `focus-cams` folder.
@@ -34,6 +34,6 @@ The extension is free. If it helped you focus, you can [leave a tip ☕](https:/
 ## Privacy
 
 The extension does not collect, store or transmit any personal data.
-See the [privacy policy](https://YOUR-LOGIN.github.io/focus-cams/#privacy).
+See the [privacy policy](https://ra1ich.github.io/focus-cams/#privacy).
 
 Webcam streams belong to their owners (SkylineWebcams, HDOnTap and others).
